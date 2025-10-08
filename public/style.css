@@ -7,21 +7,21 @@
 }
 
 :root {
-    --navy-dark: #051627;
-    --navy-medium: #0a1929;
-    --navy-light: #1a2332;
-    --gold: #d4af37;
-    --gold-light: #ffd700;
-    --gold-dark: #b8941e;
-    --primary-gradient: linear-gradient(135deg, #0a1929 0%, #1a2332 100%);
-    --gold-gradient: linear-gradient(135deg, #d4af37 0%, #ffd700 100%);
-    --glass-bg: rgba(255, 255, 255, 0.08);
-    --glass-border: rgba(212, 175, 55, 0.2);
+    --dark-bg: #0a0e13;
+    --dark-secondary: #131920;
+    --dark-accent: #1a1f28;
+    --teal-primary: #00d4aa;
+    --teal-light: #00ffcc;
+    --teal-dark: #00a885;
+    --primary-gradient: linear-gradient(135deg, #00d4aa 0%, #00ffcc 100%);
+    --dark-gradient: linear-gradient(135deg, #0a0e13 0%, #131920 100%);
+    --glass-bg: rgba(255, 255, 255, 0.05);
+    --glass-border: rgba(0, 212, 170, 0.2);
 }
 
 body {
     font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
-    background: linear-gradient(135deg, #051627 0%, #0a1929 50%, #1a2332 100%);
+    background: linear-gradient(135deg, #0a0e13 0%, #131920 50%, #1a1f28 100%);
     background-attachment: fixed;
     min-height: 100vh;
     display: flex;
@@ -40,9 +40,9 @@ body::before {
     right: 0;
     bottom: 0;
     background: 
-        radial-gradient(circle at 20% 50%, rgba(212, 175, 55, 0.15) 0%, transparent 50%),
-        radial-gradient(circle at 80% 80%, rgba(255, 215, 0, 0.1) 0%, transparent 50%),
-        radial-gradient(circle at 40% 20%, rgba(10, 25, 41, 0.3) 0%, transparent 50%);
+        radial-gradient(circle at 20% 50%, rgba(0, 212, 170, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(0, 255, 204, 0.08) 0%, transparent 50%),
+        radial-gradient(circle at 40% 20%, rgba(19, 25, 32, 0.3) 0%, transparent 50%);
     pointer-events: none;
     animation: backgroundPulse 15s ease-in-out infinite;
 }
@@ -79,15 +79,15 @@ body::before {
     }
 }
 
-/* Login Screen - Navy & Gold */
+/* Login Screen */
 .login-box {
-    background: rgba(10, 25, 41, 0.7);
+    background: rgba(19, 25, 32, 0.7);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(212, 175, 55, 0.3);
+    border: 1px solid rgba(0, 212, 170, 0.3);
     border-radius: 25px;
     padding: 45px;
-    box-shadow: 0 8px 32px 0 rgba(212, 175, 55, 0.2);
+    box-shadow: 0 8px 32px 0 rgba(0, 212, 170, 0.2);
     max-width: 480px;
     margin: 0 auto;
     animation: floatIn 0.8s ease-out;
@@ -102,7 +102,7 @@ body::before {
     left: -50%;
     width: 200%;
     height: 200%;
-    background: linear-gradient(45deg, transparent, rgba(212, 175, 55, 0.1), transparent);
+    background: linear-gradient(45deg, transparent, rgba(0, 212, 170, 0.1), transparent);
     transform: rotate(45deg);
     animation: shine 3s infinite;
 }
@@ -125,20 +125,20 @@ body::before {
 
 .login-box h1 {
     text-align: center;
-    background: var(--gold-gradient);
+    background: var(--primary-gradient);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
     margin-bottom: 12px;
     font-size: 2.8rem;
     font-weight: 800;
-    text-shadow: 0 4px 20px rgba(212, 175, 55, 0.3);
+    text-shadow: 0 4px 20px rgba(0, 212, 170, 0.3);
     letter-spacing: -1px;
 }
 
 .subtitle {
     text-align: center;
-    color: rgba(212, 175, 55, 0.9);
+    color: rgba(255, 255, 255, 0.8);
     margin-bottom: 35px;
     font-size: 1.05rem;
     font-weight: 300;
@@ -152,7 +152,7 @@ body::before {
 .form-group label {
     display: block;
     margin-bottom: 8px;
-    color: var(--gold);
+    color: var(--teal-primary);
     font-weight: 600;
     font-size: 0.95rem;
     letter-spacing: 0.3px;
@@ -161,9 +161,9 @@ body::before {
 .form-group input {
     width: 100%;
     padding: 14px 20px;
-    background: rgba(26, 35, 50, 0.6);
+    background: rgba(26, 31, 40, 0.6);
     backdrop-filter: blur(10px);
-    border: 1.5px solid rgba(212, 175, 55, 0.3);
+    border: 1.5px solid rgba(0, 212, 170, 0.3);
     border-radius: 12px;
     font-size: 0.95rem;
     font-family: 'Poppins', sans-serif;
@@ -172,21 +172,21 @@ body::before {
 }
 
 .form-group input::placeholder {
-    color: rgba(212, 175, 55, 0.5);
+    color: rgba(255, 255, 255, 0.4);
 }
 
 .form-group input:focus {
     outline: none;
-    border-color: var(--gold);
-    background: rgba(26, 35, 50, 0.8);
+    border-color: var(--teal-primary);
+    background: rgba(26, 31, 40, 0.8);
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(212, 175, 55, 0.3);
+    box-shadow: 0 6px 20px rgba(0, 212, 170, 0.3);
 }
 
 .form-group small {
     display: block;
     margin-top: 6px;
-    color: rgba(212, 175, 55, 0.6);
+    color: rgba(255, 255, 255, 0.5);
     font-size: 0.85rem;
 }
 
@@ -224,10 +224,10 @@ body::before {
 }
 
 .btn-primary {
-    background: var(--gold-gradient);
-    color: var(--navy-dark);
+    background: var(--primary-gradient);
+    color: #0a0e13;
     width: 100%;
-    box-shadow: 0 8px 30px rgba(212, 175, 55, 0.4);
+    box-shadow: 0 8px 30px rgba(0, 212, 170, 0.4);
     position: relative;
     z-index: 1;
     font-weight: 700;
@@ -235,7 +235,7 @@ body::before {
 
 .btn-primary:hover {
     transform: translateY(-3px);
-    box-shadow: 0 12px 40px rgba(212, 175, 55, 0.5);
+    box-shadow: 0 12px 40px rgba(0, 212, 170, 0.5);
 }
 
 .btn-primary:active {
@@ -243,31 +243,31 @@ body::before {
 }
 
 .btn-danger {
-    background: linear-gradient(135deg, #b8941e 0%, #8b7318 100%);
+    background: linear-gradient(135deg, #ff4757 0%, #ff6348 100%);
     color: white;
-    box-shadow: 0 5px 20px rgba(184, 148, 30, 0.4);
+    box-shadow: 0 5px 20px rgba(255, 71, 87, 0.4);
 }
 
 .btn-danger:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 30px rgba(184, 148, 30, 0.5);
+    box-shadow: 0 8px 30px rgba(255, 71, 87, 0.5);
 }
 
 /* Room Screen */
 .room-header {
-    background: rgba(10, 25, 41, 0.8);
+    background: rgba(19, 25, 32, 0.8);
     backdrop-filter: blur(20px);
-    border: 1px solid rgba(212, 175, 55, 0.3);
+    border: 1px solid rgba(0, 212, 170, 0.3);
     border-radius: 20px 20px 0 0;
     padding: 22px 30px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    box-shadow: 0 4px 20px rgba(212, 175, 55, 0.1);
+    box-shadow: 0 4px 20px rgba(0, 212, 170, 0.1);
 }
 
 .room-info h2 {
-    background: var(--gold-gradient);
+    background: var(--primary-gradient);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -279,21 +279,21 @@ body::before {
 .room-details {
     display: flex;
     gap: 20px;
-    color: var(--gold);
+    color: var(--teal-primary);
     font-size: 0.9rem;
     font-weight: 500;
 }
 
 .room-id, .user-count {
-    background: rgba(212, 175, 55, 0.15);
+    background: rgba(0, 212, 170, 0.15);
     padding: 6px 14px;
     border-radius: 15px;
     backdrop-filter: blur(10px);
-    border: 1px solid rgba(212, 175, 55, 0.2);
+    border: 1px solid rgba(0, 212, 170, 0.2);
 }
 
 .room-content {
-    background: rgba(26, 35, 50, 0.95);
+    background: rgba(26, 31, 40, 0.95);
     backdrop-filter: blur(20px);
     border-radius: 0 0 20px 20px;
     padding: 25px;
@@ -302,35 +302,19 @@ body::before {
     gap: 20px;
     min-height: 580px;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-    border: 1px solid rgba(212, 175, 55, 0.1);
+    border: 1px solid rgba(0, 212, 170, 0.1);
     border-top: none;
 }
 
-/* Video Section - Navy & Gold */
+/* Video Section */
 .video-section {
-    background: linear-gradient(135deg, #051627 0%, #0a1929 100%);
+    background: linear-gradient(135deg, #0a0e13 0%, #131920 100%);
     border-radius: 15px;
     padding: 20px;
     overflow: hidden;
     box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.5);
     position: relative;
-    border: 1px solid rgba(212, 175, 55, 0.2);
-}
-
-.video-section::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background: var(--gold-gradient);
-    animation: gradientSlide 3s linear infinite;
-}
-
-@keyframes gradientSlide {
-    0% { transform: translateX(-100%); }
-    100% { transform: translateX(100%); }
+    border: 1px solid rgba(0, 212, 170, 0.2);
 }
 
 .video-grid {
@@ -347,12 +331,12 @@ body::before {
 }
 
 .video-grid::-webkit-scrollbar-track {
-    background: rgba(212, 175, 55, 0.05);
+    background: rgba(0, 212, 170, 0.05);
     border-radius: 10px;
 }
 
 .video-grid::-webkit-scrollbar-thumb {
-    background: var(--gold-gradient);
+    background: var(--primary-gradient);
     border-radius: 10px;
 }
 
@@ -369,8 +353,8 @@ body::before {
 
 .video-container:hover {
     transform: translateY(-4px) scale(1.02);
-    border-color: var(--gold);
-    box-shadow: 0 12px 40px rgba(212, 175, 55, 0.4);
+    border-color: var(--teal-primary);
+    box-shadow: 0 12px 40px rgba(0, 212, 170, 0.4);
 }
 
 .video-container video {
@@ -384,8 +368,8 @@ body::before {
     position: absolute;
     bottom: 12px;
     left: 12px;
-    background: linear-gradient(135deg, rgba(212, 175, 55, 0.95), rgba(184, 148, 30, 0.95));
-    color: var(--navy-dark);
+    background: linear-gradient(135deg, rgba(0, 212, 170, 0.95), rgba(0, 255, 204, 0.95));
+    color: #0a0e13;
     padding: 6px 14px;
     border-radius: 8px;
     font-size: 0.85rem;
@@ -394,17 +378,17 @@ body::before {
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
 }
 
-/* Users Panel - Navy & Gold */
+/* Users Panel */
 .users-panel {
-    background: linear-gradient(135deg, rgba(10, 25, 41, 0.6), rgba(26, 35, 50, 0.6));
+    background: linear-gradient(135deg, rgba(19, 25, 32, 0.6), rgba(26, 31, 40, 0.6));
     border-radius: 15px;
     padding: 20px;
-    border: 1px solid rgba(212, 175, 55, 0.25);
+    border: 1px solid rgba(0, 212, 170, 0.25);
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
 }
 
 .users-panel h3 {
-    background: var(--gold-gradient);
+    background: var(--primary-gradient);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -420,7 +404,7 @@ body::before {
 }
 
 .user-item {
-    background: rgba(10, 25, 41, 0.7);
+    background: rgba(19, 25, 32, 0.7);
     padding: 12px;
     border-radius: 12px;
     display: flex;
@@ -428,28 +412,28 @@ body::before {
     gap: 10px;
     transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
     box-shadow: 0 3px 12px rgba(0, 0, 0, 0.2);
-    border: 1px solid rgba(212, 175, 55, 0.15);
+    border: 1px solid rgba(0, 212, 170, 0.15);
 }
 
 .user-item:hover {
     transform: translateX(-4px);
-    box-shadow: 0 6px 20px rgba(212, 175, 55, 0.2);
-    border-color: rgba(212, 175, 55, 0.3);
-    background: rgba(10, 25, 41, 0.85);
+    box-shadow: 0 6px 20px rgba(0, 212, 170, 0.2);
+    border-color: rgba(0, 212, 170, 0.3);
+    background: rgba(19, 25, 32, 0.85);
 }
 
 .user-avatar {
     width: 38px;
     height: 38px;
     border-radius: 50%;
-    background: var(--gold-gradient);
+    background: var(--primary-gradient);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--navy-dark);
+    color: #0a0e13;
     font-weight: 700;
     font-size: 1.05rem;
-    box-shadow: 0 3px 12px rgba(212, 175, 55, 0.3);
+    box-shadow: 0 3px 12px rgba(0, 212, 170, 0.3);
 }
 
 .user-info {
@@ -458,30 +442,30 @@ body::before {
 
 .user-name {
     font-weight: 600;
-    color: var(--gold);
+    color: #fff;
     font-size: 0.95rem;
     margin-bottom: 2px;
 }
 
 .user-status {
     font-size: 0.8rem;
-    color: #4caf50;
+    color: var(--teal-primary);
     font-weight: 500;
 }
 
 .user-status.muted {
-    color: #f44336;
+    color: #ff4757;
 }
 
-/* Controls Panel - Navy & Gold */
+/* Controls Panel */
 .controls-panel {
-    background: linear-gradient(135deg, rgba(10, 25, 41, 0.6), rgba(26, 35, 50, 0.6));
+    background: linear-gradient(135deg, rgba(19, 25, 32, 0.6), rgba(26, 31, 40, 0.6));
     border-radius: 15px;
     padding: 20px;
     display: flex;
     flex-direction: column;
     gap: 16px;
-    border: 1px solid rgba(212, 175, 55, 0.25);
+    border: 1px solid rgba(0, 212, 170, 0.25);
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
 }
 
@@ -490,27 +474,27 @@ body::before {
     align-items: center;
     gap: 10px;
     padding: 12px 16px;
-    background: rgba(10, 25, 41, 0.7);
+    background: rgba(19, 25, 32, 0.7);
     border-radius: 12px;
     box-shadow: 0 3px 12px rgba(0, 0, 0, 0.2);
-    border: 1px solid rgba(212, 175, 55, 0.15);
+    border: 1px solid rgba(0, 212, 170, 0.15);
 }
 
 .status-dot {
     width: 12px;
     height: 12px;
     border-radius: 50%;
-    background: var(--gold);
+    background: var(--teal-primary);
     animation: pulse 2s infinite;
     box-shadow: 0 0 10px currentColor;
 }
 
 .status-dot.connected {
-    background: #4caf50;
+    background: var(--teal-primary);
 }
 
 .status-dot.disconnected {
-    background: #f44336;
+    background: #ff4757;
     animation: none;
 }
 
@@ -527,7 +511,7 @@ body::before {
 
 #status-text {
     font-weight: 600;
-    color: var(--gold);
+    color: #fff;
     font-size: 0.9rem;
 }
 
@@ -541,8 +525,8 @@ body::before {
     flex: 1;
     min-width: 110px;
     padding: 16px;
-    background: rgba(10, 25, 41, 0.7);
-    border: 1.5px solid rgba(212, 175, 55, 0.3);
+    background: rgba(19, 25, 32, 0.7);
+    border: 1.5px solid rgba(0, 212, 170, 0.3);
     border-radius: 12px;
     cursor: pointer;
     transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
@@ -562,7 +546,7 @@ body::before {
     left: -100%;
     width: 100%;
     height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.1), transparent);
+    background: linear-gradient(90deg, transparent, rgba(0, 212, 170, 0.1), transparent);
     transition: left 0.5s;
 }
 
@@ -571,17 +555,17 @@ body::before {
 }
 
 .control-btn:hover {
-    background: linear-gradient(135deg, rgba(212, 175, 55, 0.2), rgba(10, 25, 41, 0.8));
-    border-color: var(--gold);
+    background: linear-gradient(135deg, rgba(0, 212, 170, 0.2), rgba(19, 25, 32, 0.8));
+    border-color: var(--teal-primary);
     transform: translateY(-3px);
-    box-shadow: 0 6px 20px rgba(212, 175, 55, 0.3);
+    box-shadow: 0 6px 20px rgba(0, 212, 170, 0.3);
 }
 
 .control-btn.active {
-    background: var(--gold-gradient);
-    border-color: var(--gold);
-    color: var(--navy-dark);
-    box-shadow: 0 6px 25px rgba(212, 175, 55, 0.5);
+    background: var(--primary-gradient);
+    border-color: var(--teal-primary);
+    color: #0a0e13;
+    box-shadow: 0 6px 25px rgba(0, 212, 170, 0.5);
 }
 
 .control-btn .icon {
@@ -591,11 +575,11 @@ body::before {
 .control-btn .text {
     font-weight: 600;
     font-size: 0.88rem;
-    color: var(--gold);
+    color: #fff;
 }
 
 .control-btn.active .text {
-    color: var(--navy-dark);
+    color: #0a0e13;
 }
 
 /* Responsive Design */
@@ -680,9 +664,9 @@ body::before {
     display: inline-block;
     width: 18px;
     height: 18px;
-    border: 2.5px solid rgba(212, 175, 55, 0.3);
+    border: 2.5px solid rgba(0, 212, 170, 0.3);
     border-radius: 50%;
-    border-top-color: var(--gold);
+    border-top-color: var(--teal-primary);
     animation: spin 1s ease-in-out infinite;
 }
 
