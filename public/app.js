@@ -37,7 +37,7 @@ joinBtn.addEventListener('click', async () => {
     const roomId = roomIdInput.value.trim() || generateRoomId();
 
     if (!username) {
-        alert('من فضلك أدخل اسمك!');
+        alert('Please enter your name!');
         return;
     }
 
@@ -63,20 +63,20 @@ joinBtn.addEventListener('click', async () => {
         loginScreen.classList.remove('active');
         roomScreen.classList.add('active');
 
-        updateStatus('connected', 'متصل');
+        updateStatus('connected', 'Connected');
 
-        // إضافة المستخدم الحالي إلى القائمة
-        addUserToList('me', username + ' (أنت)', false, true);
+        // Add current user to the list
+        addUserToList('me', username + ' (You)', false, true);
 
     } catch (error) {
-        console.error('خطأ في الوصول إلى الميكروفون:', error);
-        alert('فشل الوصول إلى الميكروفون! تأكد من السماح بالوصول للميكروفون.');
+        console.error('Error accessing microphone:', error);
+        alert('Failed to access microphone! Please allow microphone access.');
     }
 });
 
-// مغادرة الغرفة
+// Leave room
 leaveBtn.addEventListener('click', () => {
-    if (confirm('هل أنت متأكد من المغادرة؟')) {
+    if (confirm('Are you sure you want to leave?')) {
         leaveRoom();
     }
 });
@@ -96,10 +96,10 @@ muteBtn.addEventListener('click', () => {
     
     if (isMuted) {
         icon.textContent = '🔇';
-        text.textContent = 'إلغاء الكتم';
+        text.textContent = 'Unmute';
     } else {
         icon.textContent = '🎤';
-        text.textContent = 'كتم الصوت';
+        text.textContent = 'Mute';
     }
 
     // إخبار الآخرين
@@ -114,7 +114,7 @@ copyLinkBtn.addEventListener('click', () => {
     const url = `${window.location.origin}?room=${currentRoomId}`;
     navigator.clipboard.writeText(url).then(() => {
         const originalText = copyLinkBtn.querySelector('.text').textContent;
-        copyLinkBtn.querySelector('.text').textContent = 'تم النسخ! ✓';
+        copyLinkBtn.querySelector('.text').textContent = 'Copied! ✓';
         setTimeout(() => {
             copyLinkBtn.querySelector('.text').textContent = originalText;
         }, 2000);
@@ -123,7 +123,7 @@ copyLinkBtn.addEventListener('click', () => {
 
 // معالج الأحداث من الخادم
 socket.on('existing-users', async (users) => {
-    console.log('المستخدمون الحاليون:', users);
+    console.log('Existing users:', users);
     
     for (const user of users) {
         await createPeerConnection(user.userId, user.username, true);
@@ -131,13 +131,13 @@ socket.on('existing-users', async (users) => {
 });
 
 socket.on('user-connected', async (data) => {
-    console.log('مستخدم جديد:', data.username);
+    console.log('New user:', data.username);
     addUserToList(data.userId, data.username, false, false);
     await createPeerConnection(data.userId, data.username, false);
 });
 
 socket.on('user-disconnected', (data) => {
-    console.log('مستخدم غادر:', data.username);
+    console.log('User left:', data.username);
     removeUserFromList(data.userId);
     
     if (peers.has(data.userId)) {
@@ -147,7 +147,7 @@ socket.on('user-disconnected', (data) => {
 });
 
 socket.on('offer', async (data) => {
-    console.log('استقبال عرض من:', data.username);
+    console.log('Receiving offer from:', data.username);
     
     if (!peers.has(data.sender)) {
         await createPeerConnection(data.sender, data.username, false);
@@ -166,7 +166,7 @@ socket.on('offer', async (data) => {
 });
 
 socket.on('answer', async (data) => {
-    console.log('استقبال إجابة من:', data.sender);
+    console.log('Receiving answer from:', data.sender);
     
     const peer = peers.get(data.sender);
     if (peer) {
@@ -199,12 +199,12 @@ async function createPeerConnection(userId, username, isInitiator) {
         peer.addTrack(track, localStream);
     });
 
-    // استقبال المسار الصوتي من الطرف الآخر
+    // Receive audio track from other peer
     peer.ontrack = (event) => {
-        console.log('استقبال صوت من:', username);
+        console.log('Receiving audio from:', username);
         const audio = new Audio();
         audio.srcObject = event.streams[0];
-        audio.play().catch(e => console.error('خطأ في تشغيل الصوت:', e));
+        audio.play().catch(e => console.error('Error playing audio:', e));
     };
 
     // ICE candidates
@@ -217,14 +217,14 @@ async function createPeerConnection(userId, username, isInitiator) {
         }
     };
 
-    // معالجة تغيير حالة الاتصال
+    // Handle connection state change
     peer.onconnectionstatechange = () => {
-        console.log(`حالة الاتصال مع ${username}:`, peer.connectionState);
+        console.log(`Connection state with ${username}:`, peer.connectionState);
         
         if (peer.connectionState === 'connected') {
-            console.log(`متصل بنجاح مع ${username}`);
+            console.log(`Successfully connected with ${username}`);
         } else if (peer.connectionState === 'failed' || peer.connectionState === 'disconnected') {
-            console.log(`فشل الاتصال مع ${username}`);
+            console.log(`Connection failed with ${username}`);
         }
     };
 
@@ -263,7 +263,7 @@ function addUserToList(userId, username, isMuted, isMe) {
     
     const userStatus = document.createElement('div');
     userStatus.className = 'user-status';
-    userStatus.textContent = isMuted ? '🔇 مكتوم' : '🎤 نشط';
+    userStatus.textContent = isMuted ? '🔇 Muted' : '🎤 Active';
     
     userInfo.appendChild(userName);
     userInfo.appendChild(userStatus);
@@ -286,12 +286,12 @@ function removeUserFromList(userId) {
     }
 }
 
-// تحديث حالة المستخدم (مكتوم/نشط)
+// Update user status (muted/active)
 function updateUserStatus(userId, isMuted) {
     const userItem = document.getElementById(`user-${userId}`);
     if (userItem) {
         const statusElement = userItem.querySelector('.user-status');
-        statusElement.textContent = isMuted ? '🔇 مكتوم' : '🎤 نشط';
+        statusElement.textContent = isMuted ? '🔇 Muted' : '🎤 Active';
         statusElement.className = isMuted ? 'user-status muted' : 'user-status';
     }
 }
