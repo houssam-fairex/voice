@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>غرفة الصوتية - Voice Chat Room</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- شاشة الدخول -->
+        <div id="login-screen" class="screen active">
+            <div class="login-box">
+                <h1>🎙️ غرفة صوتية</h1>
+                <p class="subtitle">انضم للمحادثة الصوتية الجماعية</p>
+                
+                <div class="form-group">
+                    <label for="username">اسمك:</label>
+                    <input type="text" id="username" placeholder="أدخل اسمك..." autocomplete="off">
+                </div>
+                
+                <div class="form-group">
+                    <label for="room-id">رقم الغرفة:</label>
+                    <input type="text" id="room-id" placeholder="أدخل رقم الغرفة (أو اتركه فارغاً)" autocomplete="off">
+                    <small>إذا تركته فارغاً، سيتم إنشاء غرفة جديدة</small>
+                </div>
+                
+                <button id="join-btn" class="btn btn-primary">انضم الآن</button>
+            </div>
+        </div>
+
+        <!-- شاشة الغرفة الصوتية -->
+        <div id="room-screen" class="screen">
+            <div class="room-header">
+                <div class="room-info">
+                    <h2>🎙️ غرفة صوتية</h2>
+                    <div class="room-details">
+                        <span class="room-id">غرفة: <span id="current-room-id"></span></span>
+                        <span class="user-count">👥 <span id="user-count">1</span> متصل</span>
+                    </div>
+                </div>
+                <button id="leave-btn" class="btn btn-danger">مغادرة</button>
+            </div>
+
+            <div class="room-content">
+                <!-- قائمة المستخدمين -->
+                <div class="users-panel">
+                    <h3>المستخدمون المتصلون</h3>
+                    <div id="users-list" class="users-list"></div>
+                </div>
+
+                <!-- منطقة التحكم -->
+                <div class="controls-panel">
+                    <div class="status-indicator">
+                        <div class="status-dot" id="connection-status"></div>
+                        <span id="status-text">جاري الاتصال...</span>
+                    </div>
+
+                    <div class="controls">
+                        <button id="mute-btn" class="control-btn">
+                            <span class="icon">🎤</span>
+                            <span class="text">كتم الصوت</span>
+                        </button>
+                        
+                        <button id="copy-link-btn" class="control-btn">
+                            <span class="icon">🔗</span>
+                            <span class="text">نسخ رابط الغرفة</span>
+                        </button>
+                    </div>
+
+                    <div class="info-box">
+                        <h4>📋 كيفية الاستخدام:</h4>
+                        <ul>
+                            <li>انقر على "كتم الصوت" لإيقاف/تشغيل الميكروفون</li>
+                            <li>شارك رابط الغرفة مع أصدقائك للانضمام</li>
+                            <li>يمكنك رؤية جميع المتصلين في القائمة</li>
+                            <li>الصوت يعمل تلقائياً بين جميع المتصلين</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- النصوص البرمجية -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,10 @@
+# السماح بالوصول للملفات الثابتة
+<FilesMatch "\.(html|css|js|png|jpg|jpeg|gif|ico|svg)$">
+    Header set Cache-Control "max-age=86400, public"
+</FilesMatch>
+
+# السماح بـ CORS
+<IfModule mod_headers.c>
+    Header set Access-Control-Allow-Origin "*"
+</IfModule>
+

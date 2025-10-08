@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>اختبار الخادم</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-box {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 10px 0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .warning { background: #fff3cd; color: #856404; }
+        h1 { color: #333; }
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-box">
+        <h1>🔍 اختبار الخادم</h1>
+        <p>هذه الصفحة للتحقق من أن الخادم يعمل بشكل صحيح</p>
+    </div>
+
+    <div class="test-box">
+        <h2>1️⃣ اختبار Express</h2>
+        <div id="test1" class="status warning">⏳ جاري الاختبار...</div>
+        <p>إذا ظهرت هذه الصفحة، Express يعمل! ✅</p>
+    </div>
+
+    <div class="test-box">
+        <h2>2️⃣ اختبار Socket.IO</h2>
+        <div id="test2" class="status warning">⏳ جاري الاختبار...</div>
+        <p>الحالة: <span id="socket-status">غير متصل</span></p>
+    </div>
+
+    <div class="test-box">
+        <h2>3️⃣ معلومات النطاق</h2>
+        <p><strong>الرابط:</strong> <code id="url"></code></p>
+        <p><strong>البروتوكول:</strong> <code id="protocol"></code></p>
+        <p><strong>المنفذ:</strong> <code id="port"></code></p>
+    </div>
+
+    <div class="test-box">
+        <h2>📋 السجل</h2>
+        <div id="log" style="background: #f4f4f4; padding: 10px; border-radius: 5px; max-height: 200px; overflow-y: auto;"></div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        // عرض معلومات النطاق
+        document.getElementById('url').textContent = window.location.href;
+        document.getElementById('protocol').textContent = window.location.protocol;
+        document.getElementById('port').textContent = window.location.port || 'افتراضي';
+
+        // تسجيل الرسائل
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const time = new Date().toLocaleTimeString('ar-SA');
+            logDiv.innerHTML += `<div>[${time}] ${message}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        // اختبار 1: Express
+        document.getElementById('test1').className = 'status success';
+        document.getElementById('test1').textContent = '✅ Express يعمل بنجاح!';
+        log('✅ Express يعمل - الصفحة تم تحميلها', 'success');
+
+        // اختبار 2: Socket.IO
+        try {
+            log('🔌 محاولة الاتصال بـ Socket.IO...');
+            
+            const socket = io({
+                transports: ['websocket', 'polling']
+            });
+
+            socket.on('connect', () => {
+                document.getElementById('test2').className = 'status success';
+                document.getElementById('test2').textContent = '✅ Socket.IO يعمل بنجاح!';
+                document.getElementById('socket-status').textContent = 'متصل ✅';
+                document.getElementById('socket-status').style.color = 'green';
+                log('✅ Socket.IO متصل - ID: ' + socket.id, 'success');
+            });
+
+            socket.on('connect_error', (error) => {
+                document.getElementById('test2').className = 'status error';
+                document.getElementById('test2').textContent = '❌ فشل الاتصال بـ Socket.IO';
+                document.getElementById('socket-status').textContent = 'غير متصل ❌';
+                document.getElementById('socket-status').style.color = 'red';
+                log('❌ خطأ في Socket.IO: ' + error.message, 'error');
+            });
+
+            socket.on('disconnect', () => {
+                document.getElementById('socket-status').textContent = 'قطع الاتصال';
+                document.getElementById('socket-status').style.color = 'orange';
+                log('⚠️ تم قطع الاتصال', 'warning');
+            });
+
+        } catch (error) {
+            document.getElementById('test2').className = 'status error';
+            document.getElementById('test2').textContent = '❌ Socket.IO غير محمّل!';
+            log('❌ خطأ: io غير معرّف - تحقق من تحميل socket.io.js', 'error');
+        }
+
+        // اختبار تحميل socket.io.js
+        window.addEventListener('load', () => {
+            if (typeof io === 'undefined') {
+                log('❌ مكتبة Socket.IO غير محمّلة! تأكد من أن الخادم يعمل.', 'error');
+            } else {
+                log('✅ مكتبة Socket.IO محمّلة بنجاح', 'success');
+            }
+        });
+    </script>
+</body>
+</html>
+
