@@ -9,6 +9,7 @@ const roomIdInput = document.getElementById('room-id');
 const joinBtn = document.getElementById('join-btn');
 const leaveBtn = document.getElementById('leave-btn');
 const muteBtn = document.getElementById('mute-btn');
+const videoBtn = document.getElementById('video-btn');
 const copyLinkBtn = document.getElementById('copy-link-btn');
 const usersList = document.getElementById('users-list');
 const currentRoomIdSpan = document.getElementById('current-room-id');
@@ -20,6 +21,7 @@ const statusText = document.getElementById('status-text');
 let localStream = null;
 let peers = new Map(); // Map of userId -> RTCPeerConnection
 let isMuted = false;
+let isVideoOff = false;
 let currentRoomId = null;
 let currentUsername = null;
 
@@ -45,14 +47,18 @@ joinBtn.addEventListener('click', async () => {
     currentRoomId = roomId;
 
     try {
-        // طلب الوصول إلى الميكروفون
+        // Request access to microphone and camera
         localStream = await navigator.mediaDevices.getUserMedia({ 
             audio: {
                 echoCancellation: true,
                 noiseSuppression: true,
                 autoGainControl: true
             }, 
-            video: false 
+            video: {
+                width: { ideal: 1280 },
+                height: { ideal: 720 },
+                facingMode: 'user'
+            }
         });
 
         // الانضمام إلى الغرفة
@@ -65,12 +71,15 @@ joinBtn.addEventListener('click', async () => {
 
         updateStatus('connected', 'Connected');
 
+        // Display local video
+        displayLocalVideo();
+
         // Add current user to the list
         addUserToList('me', username + ' (You)', false, true);
 
     } catch (error) {
-        console.error('Error accessing microphone:', error);
-        alert('Failed to access microphone! Please allow microphone access.');
+        console.error('Error accessing media devices:', error);
+        alert('Failed to access camera/microphone! Please allow access to both.');
     }
 });
 
@@ -107,6 +116,28 @@ muteBtn.addEventListener('click', () => {
 
     // تحديث حالة المستخدم الحالي
     updateUserStatus('me', isMuted);
+});
+
+// Toggle video on/off
+videoBtn.addEventListener('click', () => {
+    if (!localStream) return;
+
+    isVideoOff = !isVideoOff;
+    localStream.getVideoTracks().forEach(track => {
+        track.enabled = !isVideoOff;
+    });
+
+    videoBtn.classList.toggle('active', isVideoOff);
+    const icon = videoBtn.querySelector('.icon');
+    const text = videoBtn.querySelector('.text');
+    
+    if (isVideoOff) {
+        icon.textContent = '📹';
+        text.textContent = 'Start Video';
+    } else {
+        icon.textContent = '📹';
+        text.textContent = 'Stop Video';
+    }
 });
 
 // نسخ رابط الغرفة
@@ -199,12 +230,10 @@ async function createPeerConnection(userId, username, isInitiator) {
         peer.addTrack(track, localStream);
     });
 
-    // Receive audio track from other peer
+    // Receive media tracks from other peer
     peer.ontrack = (event) => {
-        console.log('Receiving audio from:', username);
-        const audio = new Audio();
-        audio.srcObject = event.streams[0];
-        audio.play().catch(e => console.error('Error playing audio:', e));
+        console.log('Receiving media from:', username);
+        displayRemoteVideo(userId, event.streams[0], username);
     };
 
     // ICE candidates
@@ -244,7 +273,61 @@ async function createPeerConnection(userId, username, isInitiator) {
     return peer;
 }
 
-// إضافة مستخدم إلى القائمة
+// Display local video
+function displayLocalVideo() {
+    const videoGrid = document.getElementById('video-grid');
+    if (!videoGrid) return;
+    
+    const videoContainer = document.createElement('div');
+    videoContainer.className = 'video-container';
+    videoContainer.id = 'video-me';
+    
+    const video = document.createElement('video');
+    video.srcObject = localStream;
+    video.autoplay = true;
+    video.muted = true; // Mute own video to prevent echo
+    video.playsInline = true;
+    
+    const nameTag = document.createElement('div');
+    nameTag.className = 'video-name';
+    nameTag.textContent = currentUsername + ' (You)';
+    
+    videoContainer.appendChild(video);
+    videoContainer.appendChild(nameTag);
+    videoGrid.insertBefore(videoContainer, videoGrid.firstChild);
+}
+
+// Display remote video
+function displayRemoteVideo(userId, stream, username) {
+    const videoGrid = document.getElementById('video-grid');
+    if (!videoGrid) return;
+    
+    // Remove existing video if any
+    const existing = document.getElementById(`video-${userId}`);
+    if (existing) existing.remove();
+    
+    const videoContainer = document.createElement('div');
+    videoContainer.className = 'video-container';
+    videoContainer.id = `video-${userId}`;
+    
+    const video = document.createElement('video');
+    video.srcObject = stream;
+    video.autoplay = true;
+    video.playsInline = true;
+    
+    const nameTag = document.createElement('div');
+    nameTag.className = 'video-name';
+    nameTag.textContent = username;
+    
+    videoContainer.appendChild(video);
+    videoContainer.appendChild(nameTag);
+    videoGrid.appendChild(videoContainer);
+    
+    // Play video
+    video.play().catch(e => console.error('Error playing video:', e));
+}
+
+// Add user to list
 function addUserToList(userId, username, isMuted, isMe) {
     const userItem = document.createElement('div');
     userItem.className = 'user-item';
@@ -278,11 +361,17 @@ function addUserToList(userId, username, isMuted, isMe) {
     }
 }
 
-// إزالة مستخدم من القائمة
+// Remove user from list
 function removeUserFromList(userId) {
     const userItem = document.getElementById(`user-${userId}`);
     if (userItem) {
         userItem.remove();
+    }
+    
+    // Remove video
+    const videoContainer = document.getElementById(`video-${userId}`);
+    if (videoContainer) {
+        videoContainer.remove();
     }
 }
 
