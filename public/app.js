@@ -47,19 +47,115 @@ joinBtn.addEventListener('click', async () => {
     currentRoomId = roomId;
 
     try {
-        // Request access to microphone and camera
-        localStream = await navigator.mediaDevices.getUserMedia({ 
-            audio: {
-                echoCancellation: true,
-                noiseSuppression: true,
-                autoGainControl: true
-            }, 
-            video: {
-                width: { ideal: 1280 },
-                height: { ideal: 720 },
-                facingMode: 'user'
+        // تحسين دعم الأجهزة المختلفة - محاولة الوصول للصوت أولاً ثم الكاميرا
+        console.log('🔍 فحص دعم الأجهزة...');
+        
+        // فحص دعم WebRTC
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            throw new Error('WebRTC غير مدعوم في هذا المتصفح');
+        }
+
+        // محاولة الوصول للصوت أولاً
+        let audioStream = null;
+        let videoStream = null;
+        
+        try {
+            console.log('🎤 محاولة الوصول للميكروفون...');
+            audioStream = await navigator.mediaDevices.getUserMedia({ 
+                audio: {
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    autoGainControl: true,
+                    sampleRate: 44100
+                }
+            });
+            console.log('✅ تم الوصول للميكروفون بنجاح');
+        } catch (audioError) {
+            console.warn('⚠️ فشل الوصول للميكروفون:', audioError);
+            // محاولة الوصول للصوت بدون إعدادات متقدمة
+            try {
+                audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                console.log('✅ تم الوصول للميكروفون بإعدادات أساسية');
+            } catch (basicAudioError) {
+                console.error('❌ فشل الوصول للميكروفون تماماً:', basicAudioError);
+                throw new Error('لا يمكن الوصول للميكروفون. تأكد من السماح بالوصول في إعدادات المتصفح.');
             }
-        });
+        }
+
+        // محاولة الوصول للكاميرا
+        try {
+            console.log('📹 محاولة الوصول للكاميرا...');
+            
+            // قائمة بترتيب أولويات الكاميرا
+            const videoConstraints = [
+                // محاولة كاميرا عالية الجودة أولاً
+                {
+                    width: { ideal: 1280, max: 1920 },
+                    height: { ideal: 720, max: 1080 },
+                    facingMode: 'user',
+                    frameRate: { ideal: 30, max: 60 }
+                },
+                // محاولة كاميرا متوسطة الجودة
+                {
+                    width: { ideal: 640 },
+                    height: { ideal: 480 },
+                    facingMode: 'user',
+                    frameRate: { ideal: 24 }
+                },
+                // محاولة كاميرا أساسية
+                {
+                    width: { ideal: 320 },
+                    height: { ideal: 240 },
+                    facingMode: 'user'
+                },
+                // محاولة أي كاميرا متاحة
+                { video: true }
+            ];
+
+            for (let i = 0; i < videoConstraints.length; i++) {
+                try {
+                    videoStream = await navigator.mediaDevices.getUserMedia({ 
+                        video: videoConstraints[i]
+                    });
+                    console.log(`✅ تم الوصول للكاميرا بإعدادات المستوى ${i + 1}`);
+                    break;
+                } catch (videoError) {
+                    console.warn(`⚠️ فشل الوصول للكاميرا بالمستوى ${i + 1}:`, videoError);
+                    if (i === videoConstraints.length - 1) {
+                        throw videoError;
+                    }
+                }
+            }
+        } catch (videoError) {
+            console.warn('⚠️ فشل الوصول للكاميرا:', videoError);
+            // المتابعة بدون كاميرا إذا كان الصوت متاح
+            if (audioStream) {
+                console.log('ℹ️ المتابعة بالميكروفون فقط');
+                videoStream = null;
+            } else {
+                throw new Error('لا يمكن الوصول للميكروفون أو الكاميرا. تأكد من السماح بالوصول في إعدادات المتصفح.');
+            }
+        }
+
+        // دمج المسارات المتاحة
+        if (audioStream && videoStream) {
+            // دمج الصوت والفيديو
+            localStream = new MediaStream([
+                ...audioStream.getAudioTracks(),
+                ...videoStream.getVideoTracks()
+            ]);
+            console.log('✅ تم دمج الصوت والفيديو بنجاح');
+        } else if (audioStream) {
+            // الصوت فقط
+            localStream = audioStream;
+            console.log('✅ تم استخدام الصوت فقط');
+        } else if (videoStream) {
+            // الفيديو فقط
+            localStream = videoStream;
+            console.log('✅ تم استخدام الفيديو فقط');
+        } else {
+            throw new Error('لا يمكن الوصول لأي جهاز صوتي أو مرئي');
+        }
 
         // الانضمام إلى الغرفة
         socket.emit('join-room', roomId, username);
@@ -78,8 +174,34 @@ joinBtn.addEventListener('click', async () => {
         addUserToList('me', username + ' (You)', false, true);
 
     } catch (error) {
-        console.error('Error accessing media devices:', error);
-        alert('Failed to access camera/microphone! Please allow access to both.');
+        console.error('❌ خطأ في الوصول للأجهزة:', error);
+        
+        // رسائل خطأ مفصلة حسب نوع المشكلة
+        let errorMessage = '';
+        
+        if (error.name === 'NotAllowedError') {
+            errorMessage = 'تم رفض الوصول للميكروفون/الكاميرا.\n\nيرجى:\n1. السماح بالوصول في إعدادات المتصفح\n2. إعادة تحميل الصفحة\n3. التأكد من عدم حظر الموقع';
+        } else if (error.name === 'NotFoundError') {
+            errorMessage = 'لم يتم العثور على ميكروفون أو كاميرا.\n\nيرجى:\n1. التأكد من توصيل الميكروفون/الكاميرا\n2. التحقق من إعدادات النظام\n3. تجربة متصفح آخر';
+        } else if (error.name === 'NotReadableError') {
+            errorMessage = 'الميكروفون/الكاميرا قيد الاستخدام من قبل تطبيق آخر.\n\nيرجى:\n1. إغلاق التطبيقات الأخرى\n2. إعادة تشغيل المتصفح\n3. التحقق من إعدادات النظام';
+        } else if (error.name === 'OverconstrainedError') {
+            errorMessage = 'إعدادات الكاميرا غير مدعومة.\n\nيرجى:\n1. تجربة متصفح آخر\n2. تحديث المتصفح\n3. التحقق من إعدادات الكاميرا';
+        } else if (error.name === 'SecurityError') {
+            errorMessage = 'خطأ أمني - يجب استخدام HTTPS.\n\nيرجى:\n1. التأكد من أن الموقع يستخدم HTTPS\n2. تجربة متصفح آخر\n3. التحقق من إعدادات الأمان';
+        } else {
+            errorMessage = `خطأ غير متوقع: ${error.message}\n\nيرجى:\n1. إعادة تحميل الصفحة\n2. تجربة متصفح آخر\n3. التحقق من إعدادات المتصفح`;
+        }
+        
+        alert(`❌ فشل في الوصول للأجهزة\n\n${errorMessage}`);
+        
+        // إظهار معلومات إضافية في وحدة التحكم للمطورين
+        console.log('🔧 معلومات إضافية للمطورين:');
+        console.log('- نوع الخطأ:', error.name);
+        console.log('- رسالة الخطأ:', error.message);
+        console.log('- المتصفح:', navigator.userAgent);
+        console.log('- دعم WebRTC:', !!navigator.mediaDevices);
+        console.log('- دعم getUserMedia:', !!navigator.mediaDevices?.getUserMedia);
     }
 });
 
@@ -282,19 +404,48 @@ function displayLocalVideo() {
     videoContainer.className = 'video-container';
     videoContainer.id = 'video-me';
     
-    const video = document.createElement('video');
-    video.srcObject = localStream;
-    video.autoplay = true;
-    video.muted = true; // Mute own video to prevent echo
-    video.playsInline = true;
+    // فحص نوع المسار المتاح
+    const hasVideo = localStream.getVideoTracks().length > 0;
+    const hasAudio = localStream.getAudioTracks().length > 0;
     
-    const nameTag = document.createElement('div');
-    nameTag.className = 'video-name';
-    nameTag.textContent = currentUsername + ' (You)';
+    if (hasVideo) {
+        // عرض الفيديو
+        const video = document.createElement('video');
+        video.srcObject = localStream;
+        video.autoplay = true;
+        video.muted = true; // Mute own video to prevent echo
+        video.playsInline = true;
+        
+        const nameTag = document.createElement('div');
+        nameTag.className = 'video-name';
+        nameTag.textContent = currentUsername + ' (You)';
+        
+        videoContainer.appendChild(video);
+        videoContainer.appendChild(nameTag);
+    } else if (hasAudio) {
+        // عرض صورة رمزية للصوت فقط
+        const audioIcon = document.createElement('div');
+        audioIcon.className = 'audio-only-display';
+        audioIcon.innerHTML = `
+            <div class="audio-icon">🎤</div>
+            <div class="audio-text">Audio Only</div>
+        `;
+        
+        const nameTag = document.createElement('div');
+        nameTag.className = 'video-name';
+        nameTag.textContent = currentUsername + ' (You)';
+        
+        videoContainer.appendChild(audioIcon);
+        videoContainer.appendChild(nameTag);
+        
+        // إضافة كلاس للصوت فقط
+        videoContainer.classList.add('audio-only');
+    }
     
-    videoContainer.appendChild(video);
-    videoContainer.appendChild(nameTag);
     videoGrid.insertBefore(videoContainer, videoGrid.firstChild);
+    
+    // تحديث حالة أزرار التحكم حسب الأجهزة المتاحة
+    updateControlButtons(hasAudio, hasVideo);
 }
 
 // Display remote video
@@ -310,21 +461,47 @@ function displayRemoteVideo(userId, stream, username) {
     videoContainer.className = 'video-container';
     videoContainer.id = `video-${userId}`;
     
-    const video = document.createElement('video');
-    video.srcObject = stream;
-    video.autoplay = true;
-    video.playsInline = true;
+    // فحص نوع المسار المتاح
+    const hasVideo = stream.getVideoTracks().length > 0;
+    const hasAudio = stream.getAudioTracks().length > 0;
     
-    const nameTag = document.createElement('div');
-    nameTag.className = 'video-name';
-    nameTag.textContent = username;
+    if (hasVideo) {
+        // عرض الفيديو
+        const video = document.createElement('video');
+        video.srcObject = stream;
+        video.autoplay = true;
+        video.playsInline = true;
+        
+        const nameTag = document.createElement('div');
+        nameTag.className = 'video-name';
+        nameTag.textContent = username;
+        
+        videoContainer.appendChild(video);
+        videoContainer.appendChild(nameTag);
+        
+        // Play video
+        video.play().catch(e => console.error('Error playing video:', e));
+    } else if (hasAudio) {
+        // عرض صورة رمزية للصوت فقط
+        const audioIcon = document.createElement('div');
+        audioIcon.className = 'audio-only-display';
+        audioIcon.innerHTML = `
+            <div class="audio-icon">🎤</div>
+            <div class="audio-text">${username}</div>
+        `;
+        
+        const nameTag = document.createElement('div');
+        nameTag.className = 'video-name';
+        nameTag.textContent = username;
+        
+        videoContainer.appendChild(audioIcon);
+        videoContainer.appendChild(nameTag);
+        
+        // إضافة كلاس للصوت فقط
+        videoContainer.classList.add('audio-only');
+    }
     
-    videoContainer.appendChild(video);
-    videoContainer.appendChild(nameTag);
     videoGrid.appendChild(videoContainer);
-    
-    // Play video
-    video.play().catch(e => console.error('Error playing video:', e));
 }
 
 // Add user to list
@@ -410,18 +587,79 @@ function leaveRoom() {
     window.location.reload();
 }
 
+// تحديث أزرار التحكم حسب الأجهزة المتاحة
+function updateControlButtons(hasAudio, hasVideo) {
+    const muteBtn = document.getElementById('mute-btn');
+    const videoBtn = document.getElementById('video-btn');
+    
+    // تحديث زر الميكروفون
+    if (hasAudio) {
+        muteBtn.style.display = 'flex';
+        muteBtn.disabled = false;
+    } else {
+        muteBtn.style.display = 'none';
+        muteBtn.disabled = true;
+    }
+    
+    // تحديث زر الكاميرا
+    if (hasVideo) {
+        videoBtn.style.display = 'flex';
+        videoBtn.disabled = false;
+    } else {
+        videoBtn.style.display = 'none';
+        videoBtn.disabled = true;
+    }
+}
+
+// فحص دعم الأجهزة قبل البدء
+function checkDeviceSupport() {
+    const support = {
+        webRTC: !!navigator.mediaDevices,
+        getUserMedia: !!navigator.mediaDevices?.getUserMedia,
+        audio: false,
+        video: false,
+        constraints: false
+    };
+    
+    if (support.getUserMedia) {
+        // فحص دعم القيود المختلفة
+        if (navigator.mediaDevices.getSupportedConstraints) {
+            const constraints = navigator.mediaDevices.getSupportedConstraints();
+            support.constraints = constraints;
+            support.audio = constraints.audio || false;
+            support.video = constraints.video || false;
+        }
+    }
+    
+    console.log('🔍 دعم الأجهزة:', support);
+    return support;
+}
+
 // توليد رقم غرفة عشوائي
 function generateRoomId() {
     return Math.random().toString(36).substring(2, 8).toUpperCase();
 }
 
-// التحقق من رقم الغرفة في رابط URL
+// التحقق من رقم الغرفة في رابط URL وفحص دعم الأجهزة
 window.addEventListener('load', () => {
     const urlParams = new URLSearchParams(window.location.search);
     const roomFromUrl = urlParams.get('room');
     
     if (roomFromUrl) {
         roomIdInput.value = roomFromUrl;
+    }
+    
+    // فحص دعم الأجهزة عند تحميل الصفحة
+    const deviceSupport = checkDeviceSupport();
+    
+    if (!deviceSupport.webRTC) {
+        alert('⚠️ متصفحك لا يدعم WebRTC. يرجى استخدام متصفح حديث مثل Chrome أو Firefox أو Safari.');
+        joinBtn.disabled = true;
+        joinBtn.textContent = 'WebRTC غير مدعوم';
+    } else if (!deviceSupport.getUserMedia) {
+        alert('⚠️ متصفحك لا يدعم الوصول للأجهزة. يرجى تحديث المتصفح أو تجربة متصفح آخر.');
+        joinBtn.disabled = true;
+        joinBtn.textContent = 'الوصول للأجهزة غير مدعوم';
     }
 });
 
