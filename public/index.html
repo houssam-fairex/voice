@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home Sweet Home Room</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Login Screen -->
+        <div id="login-screen" class="screen active">
+            <div class="login-box">
+                <h1>🏡 Home Sweet Home Room</h1>
+                <p class="subtitle">Connect with your team</p>
+                
+                <div class="form-group">
+                    <label for="username">Your Name:</label>
+                    <input type="text" id="username" placeholder="Enter your name..." autocomplete="off">
+                </div>
+                
+                <div class="form-group">
+                    <label for="room-id">Room ID:</label>
+                    <input type="text" id="room-id" placeholder="Enter room ID (or leave empty)" autocomplete="off">
+                    <small>Leave empty to create a new room</small>
+                </div>
+                
+                <button id="join-btn" class="btn btn-primary">Join Now</button>
+            </div>
+        </div>
+
+        <!-- Room Screen -->
+        <div id="room-screen" class="screen">
+            <div class="room-header">
+                <div class="room-info">
+                    <h2>🏡 Home Sweet Home Room</h2>
+                    <div class="room-details">
+                        <span class="room-id">Room: <span id="current-room-id"></span></span>
+                        <span class="user-count">👥 <span id="user-count">1</span> online</span>
+                    </div>
+                </div>
+                <button id="leave-btn" class="btn btn-danger">Leave</button>
+            </div>
+
+            <div class="room-content">
+                <!-- Video Grid -->
+                <div class="video-section">
+                    <div id="video-grid" class="video-grid"></div>
+                </div>
+
+                <!-- Users List -->
+                <div class="users-panel">
+                    <h3>Connected Users</h3>
+                    <div id="users-list" class="users-list"></div>
+                </div>
+
+                <!-- Controls Panel -->
+                <div class="controls-panel">
+                    <div class="status-indicator">
+                        <div class="status-dot" id="connection-status"></div>
+                        <span id="status-text">Connecting...</span>
+                    </div>
+
+                    <div class="controls">
+                        <button id="mute-btn" class="control-btn">
+                            <span class="icon">🎤</span>
+                            <span class="text">Mute</span>
+                        </button>
+                        
+                        <button id="video-btn" class="control-btn">
+                            <span class="icon">📹</span>
+                            <span class="text">Stop Video</span>
+                        </button>
+                        
+                        <button id="copy-link-btn" class="control-btn">
+                            <span class="icon">🔗</span>
+                            <span class="text">Copy Room Link</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
+

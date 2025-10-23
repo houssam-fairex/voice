@@ -1,0 +1,24 @@
+# ملف تكوين لبعض استضافات cPanel الحديثة
+runtime: nodejs
+version: 18
+
+# نقطة الدخول
+entrypoint: node server.js
+
+# المتغيرات البيئية
+env_variables:
+  NODE_ENV: production
+  PORT: 3000
+
+# الملفات المراد تضمينها
+includes:
+  - server.js
+  - package.json
+  - public/**
+
+# الملفات المراد استبعادها
+excludes:
+  - node_modules/**
+  - .git/**
+  - *.md
+

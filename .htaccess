@@ -1,0 +1,24 @@
+# تفعيل محرك إعادة الكتابة
+RewriteEngine On
+
+# إعادة توجيه HTTP إلى HTTPS (موصى به لـ WebRTC)
+RewriteCond %{HTTPS} off
+RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# السماح بالوصول لجميع الملفات الثابتة
+<FilesMatch "\.(css|js|html|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$">
+    Header set Cache-Control "max-age=31536000, public"
+</FilesMatch>
+
+# تفعيل الضغط
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json
+</IfModule>
+
+# السماح بـ Cross-Origin Resource Sharing (CORS) إذا لزم الأمر
+<IfModule mod_headers.c>
+    Header set Access-Control-Allow-Origin "*"
+    Header set Access-Control-Allow-Methods "GET, POST, OPTIONS"
+    Header set Access-Control-Allow-Headers "Content-Type"
+</IfModule>
+
