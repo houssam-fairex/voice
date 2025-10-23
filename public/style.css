@@ -214,6 +214,9 @@ body::before {
 .help-links {
     margin-top: 20px;
     text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
 
 .help-link {
@@ -234,6 +237,14 @@ body::before {
     background: rgba(201, 169, 97, 0.1);
     border-color: rgba(201, 169, 97, 0.3);
     transform: translateY(-1px);
+}
+
+@media (min-width: 768px) {
+    .help-links {
+        flex-direction: row;
+        justify-content: center;
+        gap: 15px;
+    }
 }
 
 .btn-danger {

@@ -25,12 +25,33 @@ let isVideoOff = false;
 let currentRoomId = null;
 let currentUsername = null;
 
-// إعدادات WebRTC
+// إعدادات WebRTC محسنة لجميع المتصفحات
 const configuration = {
     iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' }
-    ]
+        { urls: 'stun:stun1.l.google.com:19302' },
+        { urls: 'stun:stun2.l.google.com:19302' },
+        { urls: 'stun:stun3.l.google.com:19302' },
+        { urls: 'stun:stun4.l.google.com:19302' },
+        // خوادم STUN إضافية للتوافق
+        { urls: 'stun:stun.stunprotocol.org:3478' },
+        { urls: 'stun:stun.ekiga.net' },
+        { urls: 'stun:stun.fwdnet.net' },
+        { urls: 'stun:stun.ideasip.com' },
+        { urls: 'stun:stun.iptel.org' },
+        { urls: 'stun:stun.rixtelecom.se' },
+        { urls: 'stun:stun.schlund.de' },
+        { urls: 'stun:stunserver.org' },
+        { urls: 'stun:stun.softjoys.com' },
+        { urls: 'stun:stun.voiparound.com' },
+        { urls: 'stun:stun.voipbuster.com' },
+        { urls: 'stun:stun.voipstunt.com' },
+        { urls: 'stun:stun.voxgratia.org' },
+        { urls: 'stun:stun.xten.com' }
+    ],
+    iceCandidatePoolSize: 10,
+    bundlePolicy: 'max-bundle',
+    rtcpMuxPolicy: 'require'
 };
 
 // الانضمام إلى الغرفة
@@ -61,20 +82,32 @@ joinBtn.addEventListener('click', async () => {
         
         try {
             console.log('🎤 محاولة الوصول للميكروفون...');
-            audioStream = await navigator.mediaDevices.getUserMedia({ 
-                audio: {
-                    echoCancellation: true,
-                    noiseSuppression: true,
-                    autoGainControl: true,
-                    sampleRate: 44100
-                }
-            });
+            
+            // محاولة الطريقة الحديثة أولاً
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                audioStream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true,
+                        sampleRate: 44100
+                    }
+                });
+            } else {
+                // استخدام الطريقة القديمة للمتصفحات القديمة
+                audioStream = await getUserMediaLegacy({ audio: true });
+            }
+            
             console.log('✅ تم الوصول للميكروفون بنجاح');
         } catch (audioError) {
             console.warn('⚠️ فشل الوصول للميكروفون:', audioError);
             // محاولة الوصول للصوت بدون إعدادات متقدمة
             try {
-                audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                    audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                } else {
+                    audioStream = await getUserMediaLegacy({ audio: true });
+                }
                 console.log('✅ تم الوصول للميكروفون بإعدادات أساسية');
             } catch (basicAudioError) {
                 console.error('❌ فشل الوصول للميكروفون تماماً:', basicAudioError);
@@ -114,9 +147,13 @@ joinBtn.addEventListener('click', async () => {
 
             for (let i = 0; i < videoConstraints.length; i++) {
                 try {
-                    videoStream = await navigator.mediaDevices.getUserMedia({ 
-                        video: videoConstraints[i]
-                    });
+                    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                        videoStream = await navigator.mediaDevices.getUserMedia({ 
+                            video: videoConstraints[i]
+                        });
+                    } else {
+                        videoStream = await getUserMediaLegacy({ video: videoConstraints[i] });
+                    }
                     console.log(`✅ تم الوصول للكاميرا بإعدادات المستوى ${i + 1}`);
                     break;
                 } catch (videoError) {
@@ -342,15 +379,17 @@ socket.on('user-muted', (data) => {
     updateUserStatus(data.userId, data.isMuted);
 });
 
-// إنشاء اتصال WebRTC مع مستخدم آخر
+// إنشاء اتصال WebRTC مع مستخدم آخر - محسن لجميع المتصفحات
 async function createPeerConnection(userId, username, isInitiator) {
-    const peer = new RTCPeerConnection(configuration);
+    const peer = createRTCPeerConnection(configuration);
     peers.set(userId, peer);
 
     // إضافة المسار الصوتي المحلي
-    localStream.getTracks().forEach(track => {
-        peer.addTrack(track, localStream);
-    });
+    if (localStream) {
+        localStream.getTracks().forEach(track => {
+            peer.addTrack(track, localStream);
+        });
+    }
 
     // Receive media tracks from other peer
     peer.ontrack = (event) => {
@@ -376,20 +415,39 @@ async function createPeerConnection(userId, username, isInitiator) {
             console.log(`Successfully connected with ${username}`);
         } else if (peer.connectionState === 'failed' || peer.connectionState === 'disconnected') {
             console.log(`Connection failed with ${username}`);
+            // محاولة إعادة الاتصال
+            setTimeout(() => {
+                if (peer.connectionState === 'failed') {
+                    console.log(`Attempting to reconnect with ${username}`);
+                    // يمكن إضافة منطق إعادة الاتصال هنا
+                }
+            }, 5000);
         }
+    };
+
+    // معالجة أخطاء ICE
+    peer.oniceconnectionstatechange = () => {
+        console.log(`ICE connection state with ${username}:`, peer.iceConnectionState);
     };
 
     // إنشاء وإرسال العرض إذا كنت المبادر
     if (isInitiator) {
         addUserToList(userId, username, false, false);
         
-        const offer = await peer.createOffer();
-        await peer.setLocalDescription(offer);
-        
-        socket.emit('offer', {
-            offer: offer,
-            target: userId
-        });
+        try {
+            const offer = await peer.createOffer({
+                offerToReceiveAudio: true,
+                offerToReceiveVideo: true
+            });
+            await peer.setLocalDescription(offer);
+            
+            socket.emit('offer', {
+                offer: offer,
+                target: userId
+            });
+        } catch (error) {
+            console.error('Error creating offer:', error);
+        }
     }
 
     return peer;
@@ -611,28 +669,117 @@ function updateControlButtons(hasAudio, hasVideo) {
     }
 }
 
-// فحص دعم الأجهزة قبل البدء
+// فحص دعم الأجهزة قبل البدء - محسن لجميع المتصفحات
 function checkDeviceSupport() {
     const support = {
-        webRTC: !!navigator.mediaDevices,
-        getUserMedia: !!navigator.mediaDevices?.getUserMedia,
+        webRTC: false,
+        getUserMedia: false,
         audio: false,
         video: false,
-        constraints: false
+        constraints: false,
+        browser: getBrowserInfo(),
+        version: getBrowserVersion(),
+        isSecure: window.location.protocol === 'https:' || window.location.hostname === 'localhost'
     };
     
-    if (support.getUserMedia) {
-        // فحص دعم القيود المختلفة
-        if (navigator.mediaDevices.getSupportedConstraints) {
-            const constraints = navigator.mediaDevices.getSupportedConstraints();
-            support.constraints = constraints;
-            support.audio = constraints.audio || false;
-            support.video = constraints.video || false;
+    // فحص دعم WebRTC الأساسي
+    if (typeof navigator !== 'undefined') {
+        support.webRTC = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+        
+        // فحص دعم getUserMedia القديم للمتصفحات القديمة
+        if (!support.webRTC) {
+            support.webRTC = !!(navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia);
+        }
+        
+        if (support.webRTC) {
+            // فحص دعم القيود المختلفة
+            if (navigator.mediaDevices && navigator.mediaDevices.getSupportedConstraints) {
+                const constraints = navigator.mediaDevices.getSupportedConstraints();
+                support.constraints = constraints;
+                support.audio = constraints.audio || false;
+                support.video = constraints.video || false;
+            } else {
+                // افتراضات للمتصفحات القديمة
+                support.audio = true;
+                support.video = true;
+            }
         }
     }
     
     console.log('🔍 دعم الأجهزة:', support);
     return support;
+}
+
+// تحديد نوع المتصفح
+function getBrowserInfo() {
+    const userAgent = navigator.userAgent.toLowerCase();
+    
+    if (userAgent.includes('chrome') && !userAgent.includes('edg')) {
+        return 'Chrome';
+    } else if (userAgent.includes('firefox')) {
+        return 'Firefox';
+    } else if (userAgent.includes('safari') && !userAgent.includes('chrome')) {
+        return 'Safari';
+    } else if (userAgent.includes('edg')) {
+        return 'Edge';
+    } else if (userAgent.includes('opera') || userAgent.includes('opr')) {
+        return 'Opera';
+    } else if (userAgent.includes('msie') || userAgent.includes('trident')) {
+        return 'Internet Explorer';
+    } else {
+        return 'Unknown';
+    }
+}
+
+// تحديد إصدار المتصفح
+function getBrowserVersion() {
+    const userAgent = navigator.userAgent;
+    
+    if (userAgent.includes('Chrome')) {
+        const match = userAgent.match(/Chrome\/(\d+)/);
+        return match ? match[1] : 'Unknown';
+    } else if (userAgent.includes('Firefox')) {
+        const match = userAgent.match(/Firefox\/(\d+)/);
+        return match ? match[1] : 'Unknown';
+    } else if (userAgent.includes('Safari')) {
+        const match = userAgent.match(/Version\/(\d+)/);
+        return match ? match[1] : 'Unknown';
+    } else if (userAgent.includes('Edge')) {
+        const match = userAgent.match(/Edg\/(\d+)/);
+        return match ? match[1] : 'Unknown';
+    } else {
+        return 'Unknown';
+    }
+}
+
+// دعم المتصفحات القديمة - getUserMedia Legacy
+function getUserMediaLegacy(constraints) {
+    return new Promise((resolve, reject) => {
+        const getUserMedia = navigator.getUserMedia || 
+                           navigator.webkitGetUserMedia || 
+                           navigator.mozGetUserMedia || 
+                           navigator.msGetUserMedia;
+        
+        if (!getUserMedia) {
+            reject(new Error('getUserMedia غير مدعوم في هذا المتصفح'));
+            return;
+        }
+        
+        getUserMedia.call(navigator, constraints, resolve, reject);
+    });
+}
+
+// تحسين RTCPeerConnection للمتصفحات القديمة
+function createRTCPeerConnection(config) {
+    const RTCPeerConnection = window.RTCPeerConnection || 
+                             window.webkitRTCPeerConnection || 
+                             window.mozRTCPeerConnection;
+    
+    if (!RTCPeerConnection) {
+        throw new Error('RTCPeerConnection غير مدعوم في هذا المتصفح');
+    }
+    
+    return new RTCPeerConnection(config);
 }
 
 // توليد رقم غرفة عشوائي
@@ -652,14 +799,26 @@ window.addEventListener('load', () => {
     // فحص دعم الأجهزة عند تحميل الصفحة
     const deviceSupport = checkDeviceSupport();
     
+    console.log('🔍 معلومات المتصفح:', {
+        browser: deviceSupport.browser,
+        version: deviceSupport.version,
+        isSecure: deviceSupport.isSecure,
+        webRTC: deviceSupport.webRTC,
+        getUserMedia: deviceSupport.getUserMedia
+    });
+    
     if (!deviceSupport.webRTC) {
-        alert('⚠️ متصفحك لا يدعم WebRTC. يرجى استخدام متصفح حديث مثل Chrome أو Firefox أو Safari.');
+        const message = `⚠️ متصفحك (${deviceSupport.browser} ${deviceSupport.version}) لا يدعم WebRTC.\n\nيرجى:\n1. تحديث المتصفح إلى أحدث إصدار\n2. تجربة متصفح آخر مثل Chrome أو Firefox\n3. التأكد من تفعيل JavaScript`;
+        alert(message);
         joinBtn.disabled = true;
         joinBtn.textContent = 'WebRTC غير مدعوم';
-    } else if (!deviceSupport.getUserMedia) {
-        alert('⚠️ متصفحك لا يدعم الوصول للأجهزة. يرجى تحديث المتصفح أو تجربة متصفح آخر.');
+    } else if (!deviceSupport.isSecure && window.location.hostname !== 'localhost') {
+        const message = `⚠️ يجب استخدام HTTPS للوصول للأجهزة.\n\nيرجى:\n1. التأكد من أن الموقع يستخدم https://\n2. أو استخدام localhost للتطوير`;
+        alert(message);
         joinBtn.disabled = true;
-        joinBtn.textContent = 'الوصول للأجهزة غير مدعوم';
+        joinBtn.textContent = 'HTTPS مطلوب';
+    } else {
+        console.log('✅ المتصفح مدعوم - يمكن المتابعة');
     }
 });
 
