@@ -52,7 +52,7 @@ const configuration = {
         { urls: 'stun:stun.voxgratia.org' },
         { urls: 'stun:stun.xten.com' },
         
-        // خوادم TURN مجانية للاتصال عبر الشبكات المختلفة
+        // خوادم TURN مجانية موثوقة للاتصال عبر الشبكات المختلفة
         { 
             urls: 'turn:openrelay.metered.ca:80',
             username: 'openrelayproject',
@@ -81,7 +81,7 @@ const configuration = {
             credential: 'free'
         },
         
-        // خوادم TURN أخرى
+        // خوادم TURN أخرى موثوقة
         { 
             urls: 'turn:relay.metered.ca:80',
             username: '87e9c5b0b0b0b0b0',
@@ -96,6 +96,47 @@ const configuration = {
             urls: 'turn:relay.metered.ca:443?transport=tcp',
             username: '87e9c5b0b0b0b0b0',
             credential: '5b0b0b0b0b0b0b0b'
+        },
+        
+        // خوادم TURN إضافية للتوافق الأقصى
+        { 
+            urls: 'turn:turn.bistri.com:80',
+            username: 'homeo',
+            credential: 'homeo'
+        },
+        { 
+            urls: 'turn:turn.bistri.com:443',
+            username: 'homeo',
+            credential: 'homeo'
+        },
+        { 
+            urls: 'turn:turn.bistri.com:443?transport=tcp',
+            username: 'homeo',
+            credential: 'homeo'
+        },
+        
+        // خوادم TURN عامة أخرى
+        { 
+            urls: 'turn:webrtc.free-solutions.org:3478',
+            username: 'free',
+            credential: 'free'
+        },
+        { 
+            urls: 'turn:webrtc.free-solutions.org:3478?transport=tcp',
+            username: 'free',
+            credential: 'free'
+        },
+        
+        // خوادم TURN من خدمات مختلفة
+        { 
+            urls: 'turn:turn.anyfirewall.com:443?transport=tcp',
+            username: 'webrtc',
+            credential: 'webrtc'
+        },
+        { 
+            urls: 'turn:turn.anyfirewall.com:443',
+            username: 'webrtc',
+            credential: 'webrtc'
         }
     ],
     iceCandidatePoolSize: 10,
@@ -893,24 +934,37 @@ async function testNetworkConnectivity() {
     console.log('🔍 اختبار الاتصال بالشبكة...');
     
     try {
-        // اختبار خوادم STUN
+        // اختبار خوادم STUN و TURN
         const testPeer = createRTCPeerConnection({
             iceServers: [
                 { urls: 'stun:stun.l.google.com:19302' },
-                { urls: 'stun:stun1.l.google.com:19302' }
+                { urls: 'stun:stun1.l.google.com:19302' },
+                // اختبار بعض خوادم TURN
+                { 
+                    urls: 'turn:openrelay.metered.ca:80',
+                    username: 'openrelayproject',
+                    credential: 'openrelayproject'
+                },
+                { 
+                    urls: 'turn:freeturn.tel:3478',
+                    username: 'free',
+                    credential: 'free'
+                }
             ]
         });
         
         return new Promise((resolve) => {
             let stunWorking = false;
             let turnWorking = false;
+            let hostWorking = false;
             
             testPeer.onicecandidate = (event) => {
                 if (event.candidate) {
-                    console.log('📡 ICE Candidate found:', event.candidate.type);
+                    console.log('📡 ICE Candidate found:', event.candidate.type, event.candidate.candidate);
                     
                     if (event.candidate.type === 'host') {
                         console.log('✅ Host candidate - الاتصال المحلي يعمل');
+                        hostWorking = true;
                     } else if (event.candidate.type === 'srflx') {
                         console.log('✅ STUN candidate - خوادم STUN تعمل');
                         stunWorking = true;
@@ -926,7 +980,7 @@ async function testNetworkConnectivity() {
                         resolve({
                             stun: stunWorking,
                             turn: turnWorking,
-                            local: true
+                            local: hostWorking
                         });
                     }, 2000);
                 }
@@ -938,15 +992,15 @@ async function testNetworkConnectivity() {
                 testPeer.setLocalDescription(offer);
             });
             
-            // timeout بعد 10 ثوان
+            // timeout بعد 15 ثانية لإعطاء وقت أكثر لخوادم TURN
             setTimeout(() => {
                 testPeer.close();
                 resolve({
                     stun: stunWorking,
                     turn: turnWorking,
-                    local: true
+                    local: hostWorking
                 });
-            }, 10000);
+            }, 15000);
         });
         
     } catch (error) {
@@ -990,6 +1044,14 @@ function displayNetworkTestResults(results) {
         message += '1. التحقق من إعدادات Firewall\n';
         message += '2. تجربة شبكة أخرى\n';
         message += '3. الاتصال بالمدير التقني';
+    } else if (results.stun && !results.turn) {
+        message += '\n✅ ممتاز! خوادم STUN تعمل - يمكن الاتصال مع معظم الأشخاص.\n';
+        message += '💡 نصائح:\n';
+        message += '1. جرب الاتصال مع الأشخاص في أماكن أخرى\n';
+        message += '2. إذا لم يعمل، جرب شبكة أخرى\n';
+        message += '3. التطبيق يعمل بشكل جيد مع معظم الشبكات';
+    } else if (results.stun && results.turn) {
+        message += '\n🎉 ممتاز! جميع الخوادم تعمل - يمكن الاتصال مع أي شخص في أي مكان!';
     }
     
     console.log(message);
