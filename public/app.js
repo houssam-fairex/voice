@@ -11,6 +11,7 @@ const leaveBtn = document.getElementById('leave-btn');
 const muteBtn = document.getElementById('mute-btn');
 const videoBtn = document.getElementById('video-btn');
 const copyLinkBtn = document.getElementById('copy-link-btn');
+const testNetworkBtn = document.getElementById('test-network-btn');
 const usersList = document.getElementById('users-list');
 const currentRoomIdSpan = document.getElementById('current-room-id');
 const userCountSpan = document.getElementById('user-count');
@@ -25,14 +26,16 @@ let isVideoOff = false;
 let currentRoomId = null;
 let currentUsername = null;
 
-// إعدادات WebRTC محسنة لجميع المتصفحات
+// إعدادات WebRTC محسنة لجميع المتصفحات مع خوادم TURN
 const configuration = {
     iceServers: [
+        // خوادم STUN الأساسية
         { urls: 'stun:stun.l.google.com:19302' },
         { urls: 'stun:stun1.l.google.com:19302' },
         { urls: 'stun:stun2.l.google.com:19302' },
         { urls: 'stun:stun3.l.google.com:19302' },
         { urls: 'stun:stun4.l.google.com:19302' },
+        
         // خوادم STUN إضافية للتوافق
         { urls: 'stun:stun.stunprotocol.org:3478' },
         { urls: 'stun:stun.ekiga.net' },
@@ -47,11 +50,58 @@ const configuration = {
         { urls: 'stun:stun.voipbuster.com' },
         { urls: 'stun:stun.voipstunt.com' },
         { urls: 'stun:stun.voxgratia.org' },
-        { urls: 'stun:stun.xten.com' }
+        { urls: 'stun:stun.xten.com' },
+        
+        // خوادم TURN مجانية للاتصال عبر الشبكات المختلفة
+        { 
+            urls: 'turn:openrelay.metered.ca:80',
+            username: 'openrelayproject',
+            credential: 'openrelayproject'
+        },
+        { 
+            urls: 'turn:openrelay.metered.ca:443',
+            username: 'openrelayproject',
+            credential: 'openrelayproject'
+        },
+        { 
+            urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+            username: 'openrelayproject',
+            credential: 'openrelayproject'
+        },
+        
+        // خوادم TURN إضافية مجانية
+        { 
+            urls: 'turn:freeturn.tel:3478',
+            username: 'free',
+            credential: 'free'
+        },
+        { 
+            urls: 'turn:freeturn.tel:3478?transport=tcp',
+            username: 'free',
+            credential: 'free'
+        },
+        
+        // خوادم TURN أخرى
+        { 
+            urls: 'turn:relay.metered.ca:80',
+            username: '87e9c5b0b0b0b0b0',
+            credential: '5b0b0b0b0b0b0b0b'
+        },
+        { 
+            urls: 'turn:relay.metered.ca:443',
+            username: '87e9c5b0b0b0b0b0',
+            credential: '5b0b0b0b0b0b0b0b'
+        },
+        { 
+            urls: 'turn:relay.metered.ca:443?transport=tcp',
+            username: '87e9c5b0b0b0b0b0',
+            credential: '5b0b0b0b0b0b0b0b'
+        }
     ],
     iceCandidatePoolSize: 10,
     bundlePolicy: 'max-bundle',
-    rtcpMuxPolicy: 'require'
+    rtcpMuxPolicy: 'require',
+    iceTransportPolicy: 'all' // استخدام STUN و TURN
 };
 
 // الانضمام إلى الغرفة
@@ -311,6 +361,31 @@ copyLinkBtn.addEventListener('click', () => {
     });
 });
 
+// اختبار الشبكة يدوياً
+testNetworkBtn.addEventListener('click', async () => {
+    const originalText = testNetworkBtn.querySelector('.text').textContent;
+    testNetworkBtn.querySelector('.text').textContent = 'Testing...';
+    testNetworkBtn.disabled = true;
+    
+    try {
+        const networkResults = await testNetworkConnectivity();
+        displayNetworkTestResults(networkResults);
+        
+        testNetworkBtn.querySelector('.text').textContent = 'Done! ✓';
+        setTimeout(() => {
+            testNetworkBtn.querySelector('.text').textContent = originalText;
+            testNetworkBtn.disabled = false;
+        }, 3000);
+    } catch (error) {
+        console.error('خطأ في اختبار الشبكة:', error);
+        testNetworkBtn.querySelector('.text').textContent = 'Error!';
+        setTimeout(() => {
+            testNetworkBtn.querySelector('.text').textContent = originalText;
+            testNetworkBtn.disabled = false;
+        }, 3000);
+    }
+});
+
 // معالج الأحداث من الخادم
 socket.on('existing-users', async (users) => {
     console.log('Existing users:', users);
@@ -412,22 +487,53 @@ async function createPeerConnection(userId, username, isInitiator) {
         console.log(`Connection state with ${username}:`, peer.connectionState);
         
         if (peer.connectionState === 'connected') {
-            console.log(`Successfully connected with ${username}`);
-        } else if (peer.connectionState === 'failed' || peer.connectionState === 'disconnected') {
-            console.log(`Connection failed with ${username}`);
-            // محاولة إعادة الاتصال
+            console.log(`✅ Successfully connected with ${username}`);
+            updateStatus('connected', 'Connected');
+        } else if (peer.connectionState === 'connecting') {
+            console.log(`🔄 Connecting with ${username}...`);
+            updateStatus('connecting', 'Connecting...');
+        } else if (peer.connectionState === 'failed') {
+            console.log(`❌ Connection failed with ${username}`);
+            updateStatus('disconnected', 'Connection Failed');
+            
+            // محاولة إعادة الاتصال بعد 3 ثوان
             setTimeout(() => {
                 if (peer.connectionState === 'failed') {
-                    console.log(`Attempting to reconnect with ${username}`);
-                    // يمكن إضافة منطق إعادة الاتصال هنا
+                    console.log(`🔄 Attempting to reconnect with ${username}`);
+                    // إعادة إنشاء الاتصال
+                    peers.delete(userId);
+                    createPeerConnection(userId, username, isInitiator);
                 }
-            }, 5000);
+            }, 3000);
+        } else if (peer.connectionState === 'disconnected') {
+            console.log(`⚠️ Disconnected from ${username}`);
+            updateStatus('disconnected', 'Disconnected');
         }
     };
 
     // معالجة أخطاء ICE
     peer.oniceconnectionstatechange = () => {
         console.log(`ICE connection state with ${username}:`, peer.iceConnectionState);
+        
+        if (peer.iceConnectionState === 'connected') {
+            console.log(`✅ ICE connected with ${username}`);
+        } else if (peer.iceConnectionState === 'failed') {
+            console.log(`❌ ICE connection failed with ${username}`);
+            // محاولة إعادة جمع ICE candidates
+            peer.restartIce();
+        } else if (peer.iceConnectionState === 'checking') {
+            console.log(`🔍 ICE checking with ${username}`);
+        }
+    };
+
+    // معالجة ICE gathering
+    peer.onicegatheringstatechange = () => {
+        console.log(`ICE gathering state with ${username}:`, peer.iceGatheringState);
+    };
+
+    // معالجة أخطاء ICE candidates
+    peer.onicecandidateerror = (event) => {
+        console.error(`ICE candidate error with ${username}:`, event);
     };
 
     // إنشاء وإرسال العرض إذا كنت المبادر
@@ -782,6 +888,120 @@ function createRTCPeerConnection(config) {
     return new RTCPeerConnection(config);
 }
 
+// اختبار الاتصال وتشخيص مشاكل الشبكة
+async function testNetworkConnectivity() {
+    console.log('🔍 اختبار الاتصال بالشبكة...');
+    
+    try {
+        // اختبار خوادم STUN
+        const testPeer = createRTCPeerConnection({
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' }
+            ]
+        });
+        
+        return new Promise((resolve) => {
+            let stunWorking = false;
+            let turnWorking = false;
+            
+            testPeer.onicecandidate = (event) => {
+                if (event.candidate) {
+                    console.log('📡 ICE Candidate found:', event.candidate.type);
+                    
+                    if (event.candidate.type === 'host') {
+                        console.log('✅ Host candidate - الاتصال المحلي يعمل');
+                    } else if (event.candidate.type === 'srflx') {
+                        console.log('✅ STUN candidate - خوادم STUN تعمل');
+                        stunWorking = true;
+                    } else if (event.candidate.type === 'relay') {
+                        console.log('✅ TURN candidate - خوادم TURN تعمل');
+                        turnWorking = true;
+                    }
+                } else {
+                    console.log('🔍 انتهاء جمع ICE candidates');
+                    
+                    setTimeout(() => {
+                        testPeer.close();
+                        resolve({
+                            stun: stunWorking,
+                            turn: turnWorking,
+                            local: true
+                        });
+                    }, 2000);
+                }
+            };
+            
+            // بدء جمع ICE candidates
+            testPeer.createDataChannel('test');
+            testPeer.createOffer().then(offer => {
+                testPeer.setLocalDescription(offer);
+            });
+            
+            // timeout بعد 10 ثوان
+            setTimeout(() => {
+                testPeer.close();
+                resolve({
+                    stun: stunWorking,
+                    turn: turnWorking,
+                    local: true
+                });
+            }, 10000);
+        });
+        
+    } catch (error) {
+        console.error('❌ خطأ في اختبار الشبكة:', error);
+        return {
+            stun: false,
+            turn: false,
+            local: false,
+            error: error.message
+        };
+    }
+}
+
+// عرض نتائج اختبار الشبكة
+function displayNetworkTestResults(results) {
+    console.log('📊 نتائج اختبار الشبكة:', results);
+    
+    let message = '🔍 نتائج اختبار الاتصال:\n\n';
+    
+    if (results.local) {
+        message += '✅ الاتصال المحلي: يعمل\n';
+    } else {
+        message += '❌ الاتصال المحلي: لا يعمل\n';
+    }
+    
+    if (results.stun) {
+        message += '✅ خوادم STUN: تعمل\n';
+    } else {
+        message += '❌ خوادم STUN: لا تعمل\n';
+    }
+    
+    if (results.turn) {
+        message += '✅ خوادم TURN: تعمل\n';
+    } else {
+        message += '❌ خوادم TURN: لا تعمل\n';
+    }
+    
+    if (!results.stun && !results.turn) {
+        message += '\n⚠️ تحذير: قد تواجه مشاكل في الاتصال مع الأشخاص في أماكن أخرى.\n';
+        message += 'يرجى:\n';
+        message += '1. التحقق من إعدادات Firewall\n';
+        message += '2. تجربة شبكة أخرى\n';
+        message += '3. الاتصال بالمدير التقني';
+    }
+    
+    console.log(message);
+    
+    // إظهار النتائج للمستخدم إذا كانت هناك مشاكل
+    if (!results.stun || !results.turn) {
+        setTimeout(() => {
+            alert(message);
+        }, 1000);
+    }
+}
+
 // توليد رقم غرفة عشوائي
 function generateRoomId() {
     return Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -819,6 +1039,12 @@ window.addEventListener('load', () => {
         joinBtn.textContent = 'HTTPS مطلوب';
     } else {
         console.log('✅ المتصفح مدعوم - يمكن المتابعة');
+        
+        // اختبار الاتصال بالشبكة بعد تحميل الصفحة
+        setTimeout(async () => {
+            const networkResults = await testNetworkConnectivity();
+            displayNetworkTestResults(networkResults);
+        }, 2000);
     }
 });
 
