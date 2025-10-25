@@ -12,6 +12,7 @@ const muteBtn = document.getElementById('mute-btn');
 const videoBtn = document.getElementById('video-btn');
 const copyLinkBtn = document.getElementById('copy-link-btn');
 const testNetworkBtn = document.getElementById('test-network-btn');
+const optimizeAudioBtn = document.getElementById('optimize-audio-btn');
 const usersList = document.getElementById('users-list');
 const currentRoomIdSpan = document.getElementById('current-room-id');
 const userCountSpan = document.getElementById('user-count');
@@ -174,14 +175,34 @@ joinBtn.addEventListener('click', async () => {
         try {
             console.log('🎤 محاولة الوصول للميكروفون...');
             
-            // محاولة الطريقة الحديثة أولاً
+            // محاولة الطريقة الحديثة أولاً مع إعدادات صوت محسنة
             if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
                 audioStream = await navigator.mediaDevices.getUserMedia({ 
                     audio: {
+                        // إعدادات جودة الصوت المحسنة
                         echoCancellation: true,
                         noiseSuppression: true,
                         autoGainControl: true,
-                        sampleRate: 44100
+                        sampleRate: 48000, // جودة أعلى
+                        sampleSize: 16, // دقة أعلى
+                        channelCount: 1, // مونو للحجم الأصغر
+                        
+                        // إعدادات إضافية للجودة
+                        latency: 0.01, // تأخير أقل
+                        volume: 1.0, // حجم كامل
+                        
+                        // إعدادات متقدمة للضوضاء
+                        googEchoCancellation: true,
+                        googAutoGainControl: true,
+                        googNoiseSuppression: true,
+                        googHighpassFilter: true,
+                        googTypingNoiseDetection: true,
+                        googAudioMirroring: false,
+                        
+                        // إعدادات جودة إضافية
+                        googNoiseReduction: true,
+                        googEchoCancellation2: true,
+                        googAutoGainControl2: true
                     }
                 });
             } else {
@@ -294,6 +315,10 @@ joinBtn.addEventListener('click', async () => {
         roomScreen.classList.add('active');
 
         updateStatus('connected', 'Connected');
+
+        // تحسين جودة الصوت
+        optimizeAudioQuality();
+        monitorAudioQuality();
 
         // Display local video
         displayLocalVideo();
@@ -424,6 +449,30 @@ testNetworkBtn.addEventListener('click', async () => {
             testNetworkBtn.querySelector('.text').textContent = originalText;
             testNetworkBtn.disabled = false;
         }, 3000);
+    }
+});
+
+// تحسين جودة الصوت يدوياً
+optimizeAudioBtn.addEventListener('click', () => {
+    const originalText = optimizeAudioBtn.querySelector('.text').textContent;
+    optimizeAudioBtn.querySelector('.text').textContent = 'Optimizing...';
+    optimizeAudioBtn.disabled = true;
+    
+    try {
+        optimizeAudioQuality();
+        optimizeAudioBtn.querySelector('.text').textContent = 'Done! ✓';
+        
+        setTimeout(() => {
+            optimizeAudioBtn.querySelector('.text').textContent = originalText;
+            optimizeAudioBtn.disabled = false;
+        }, 2000);
+    } catch (error) {
+        console.error('خطأ في تحسين الصوت:', error);
+        optimizeAudioBtn.querySelector('.text').textContent = 'Error!';
+        setTimeout(() => {
+            optimizeAudioBtn.querySelector('.text').textContent = originalText;
+            optimizeAudioBtn.disabled = false;
+        }, 2000);
     }
 });
 
@@ -584,7 +633,10 @@ async function createPeerConnection(userId, username, isInitiator) {
         try {
             const offer = await peer.createOffer({
                 offerToReceiveAudio: true,
-                offerToReceiveVideo: true
+                offerToReceiveVideo: true,
+                // إعدادات جودة الصوت المحسنة
+                voiceActivityDetection: true,
+                iceRestart: false
             });
             await peer.setLocalDescription(offer);
             
@@ -614,12 +666,16 @@ function displayLocalVideo() {
     const hasAudio = localStream.getAudioTracks().length > 0;
     
     if (hasVideo) {
-        // عرض الفيديو
+        // عرض الفيديو مع إعدادات جودة محسنة
         const video = document.createElement('video');
         video.srcObject = localStream;
         video.autoplay = true;
         video.muted = true; // Mute own video to prevent echo
         video.playsInline = true;
+        
+        // إعدادات جودة الصوت للفيديو
+        video.volume = 1.0;
+        video.defaultMuted = false;
         
         const nameTag = document.createElement('div');
         nameTag.className = 'video-name';
@@ -671,11 +727,15 @@ function displayRemoteVideo(userId, stream, username) {
     const hasAudio = stream.getAudioTracks().length > 0;
     
     if (hasVideo) {
-        // عرض الفيديو
+        // عرض الفيديو مع إعدادات جودة محسنة
         const video = document.createElement('video');
         video.srcObject = stream;
         video.autoplay = true;
         video.playsInline = true;
+        
+        // إعدادات جودة الصوت للفيديو البعيد
+        video.volume = 1.0;
+        video.defaultMuted = false;
         
         const nameTag = document.createElement('div');
         nameTag.className = 'video-name';
@@ -684,7 +744,7 @@ function displayRemoteVideo(userId, stream, username) {
         videoContainer.appendChild(video);
         videoContainer.appendChild(nameTag);
         
-        // Play video
+        // Play video with quality settings
         video.play().catch(e => console.error('Error playing video:', e));
     } else if (hasAudio) {
         // عرض صورة رمزية للصوت فقط
@@ -1062,6 +1122,55 @@ function displayNetworkTestResults(results) {
             alert(message);
         }, 1000);
     }
+}
+
+// تحسين جودة الصوت في الوقت الفعلي
+function optimizeAudioQuality() {
+    if (!localStream) return;
+    
+    const audioTracks = localStream.getAudioTracks();
+    audioTracks.forEach(track => {
+        const settings = track.getSettings();
+        console.log('🎵 إعدادات الصوت الحالية:', settings);
+        
+        // تطبيق إعدادات الجودة المحسنة
+        const constraints = {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+            sampleRate: 48000,
+            sampleSize: 16,
+            channelCount: 1,
+            latency: 0.01,
+            volume: 1.0
+        };
+        
+        track.applyConstraints(constraints).then(() => {
+            console.log('✅ تم تحسين جودة الصوت بنجاح');
+        }).catch(error => {
+            console.warn('⚠️ لم يتم تطبيق جميع إعدادات الجودة:', error);
+        });
+    });
+}
+
+// مراقبة جودة الصوت
+function monitorAudioQuality() {
+    if (!localStream) return;
+    
+    const audioTracks = localStream.getAudioTracks();
+    audioTracks.forEach(track => {
+        track.addEventListener('ended', () => {
+            console.log('⚠️ انتهى مسار الصوت');
+        });
+        
+        track.addEventListener('mute', () => {
+            console.log('🔇 تم كتم الصوت');
+        });
+        
+        track.addEventListener('unmute', () => {
+            console.log('🔊 تم إلغاء كتم الصوت');
+        });
+    });
 }
 
 // توليد رقم غرفة عشوائي
